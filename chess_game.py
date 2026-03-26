@@ -1,5 +1,3 @@
-from hints import print_hints, parse_square
-
 FILES = "abcdefgh"
 RANKS = "12345678"
 
@@ -133,6 +131,42 @@ def king_captured(board):
     return "K" not in flat or "k" not in flat
 
 
+# ================== HINT SYSTEM ==================
+
+def find_valid_moves(board, src, turn):
+    moves = []
+    for r in range(8):
+        for c in range(8):
+            ok, _ = valid_move(board, src, (r, c), turn)
+            if ok:
+                moves.append((r, c))
+    return moves
+
+
+def print_hints(board, src, turn):
+    moves = find_valid_moves(board, src, turn)
+
+    if not moves:
+        print("No valid moves.")
+        return
+
+    print("Possible moves:")
+    for r, c in moves:
+        file = chr(ord('a') + c)
+        rank = 8 - r
+        print(f"{file}{rank}", end=" ")
+
+    print()
+
+
+def parse_square(s):
+    file = ord(s[0]) - ord('a')
+    rank = 8 - int(s[1])
+    return (rank, file)
+
+
+# ================== MAIN GAME ==================
+
 def main():
     board = make_board()
     turn = "w"
@@ -143,12 +177,12 @@ def main():
         print("White to move" if turn == "w" else "Black to move")
         move = input("Enter move (e2 e4) or 'hint e2': ")
 
-        # HINT COMMAND
+        # HINT
         if move.startswith("hint"):
             try:
                 _, sq = move.split()
                 src = parse_square(sq)
-                print_hints(board, src, turn, valid_move)
+                print_hints(board, src, turn)
             except:
                 print("Use: hint e2")
             continue
