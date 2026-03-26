@@ -1,3 +1,5 @@
+import hints
+
 FILES = "abcdefgh"
 RANKS = "12345678"
 
@@ -131,38 +133,7 @@ def king_captured(board):
     return "K" not in flat or "k" not in flat
 
 
-# ================== HINT SYSTEM ==================
 
-def find_valid_moves(board, src, turn):
-    moves = []
-    for r in range(8):
-        for c in range(8):
-            ok, _ = valid_move(board, src, (r, c), turn)
-            if ok:
-                moves.append((r, c))
-    return moves
-
-
-def print_hints(board, src, turn):
-    moves = find_valid_moves(board, src, turn)
-
-    if not moves:
-        print("No valid moves.")
-        return
-
-    print("Possible moves:")
-    for r, c in moves:
-        file = chr(ord('a') + c)
-        rank = 8 - r
-        print(f"{file}{rank}", end=" ")
-
-    print()
-
-
-def parse_square(s):
-    file = ord(s[0]) - ord('a')
-    rank = 8 - int(s[1])
-    return (rank, file)
 
 
 # ================== MAIN GAME ==================
@@ -181,8 +152,8 @@ def main():
         if move.startswith("hint"):
             try:
                 _, sq = move.split()
-                src = parse_square(sq)
-                print_hints(board, src, turn)
+                src = hints.parse_square(sq)
+                hints.print_hints(board, src, turn, valid_move)
             except:
                 print("Use: hint e2")
             continue
@@ -190,8 +161,8 @@ def main():
         # NORMAL MOVE
         try:
             s, d = move.split()
-            src = parse_square(s)
-            dst = parse_square(d)
+            src = hints.parse_square(s)
+            dst = hints.parse_square(d)
         except:
             print("Invalid input. Use: e2 e4")
             continue
