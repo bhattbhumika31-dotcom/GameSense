@@ -4,19 +4,39 @@ import sys
 SIZE = 9
 CELL_SIZE = 60
 MARGIN = 40
-WINDOW_SIZE = SIZE * CELL_SIZE + 2 * MARGIN
+PANEL_WIDTH = 180
+BOARD_SIZE = SIZE * CELL_SIZE + 2 * MARGIN
+WINDOW_WIDTH = BOARD_SIZE + PANEL_WIDTH
+WINDOW_HEIGHT = BOARD_SIZE
 
 WOOD = (222, 184, 135)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 LINE = (0, 0, 0)
+TEXT = (40, 20, 0)
+PANEL_BG = (240, 220, 180)
+BUTTON = (180, 120, 70)
+BUTTON_HOVER = (200, 140, 90)
+
+RESET_BUTTON = pygame.Rect(BOARD_SIZE + 30, 250, 120, 45)
 
 pygame.init()
-screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Go Game - Basic")
+font = pygame.font.Font(None, 32)
+small_font = pygame.font.Font(None, 26)
 
 board = [['.' for _ in range(SIZE)] for _ in range(SIZE)]
 current_player = 'B'
+black_moves = 0
+white_moves = 0
+
+def reset_game():
+    global board, current_player, black_moves, white_moves
+    board = [['.' for _ in range(SIZE)] for _ in range(SIZE)]
+    current_player = 'B'
+    black_moves = 0
+    white_moves = 0
 
 def neighbors(r, c):
     dirs = [(1,0), (-1,0), (0,1), (0,-1)]
@@ -71,10 +91,10 @@ def draw_board():
     for i in range(SIZE):
         pygame.draw.line(screen, LINE,
                          (MARGIN, MARGIN + i * CELL_SIZE),
-                         (WINDOW_SIZE - MARGIN, MARGIN + i * CELL_SIZE))
+                         (BOARD_SIZE - MARGIN, MARGIN + i * CELL_SIZE))
         pygame.draw.line(screen, LINE,
                          (MARGIN + i * CELL_SIZE, MARGIN),
-                         (MARGIN + i * CELL_SIZE, WINDOW_SIZE - MARGIN))
+                         (MARGIN + i * CELL_SIZE, BOARD_SIZE - MARGIN))
 
     for r in range(SIZE):
         for c in range(SIZE):
@@ -84,6 +104,32 @@ def draw_board():
                                    (MARGIN + c * CELL_SIZE,
                                     MARGIN + r * CELL_SIZE),
                                    CELL_SIZE // 2 - 5)
+
+    panel_rect = pygame.Rect(BOARD_SIZE, 0, PANEL_WIDTH, WINDOW_HEIGHT)
+    pygame.draw.rect(screen, PANEL_BG, panel_rect)
+    pygame.draw.line(screen, LINE, (BOARD_SIZE, 0), (BOARD_SIZE, WINDOW_HEIGHT), 2)
+
+    title = font.render("Moves", True, TEXT)
+    screen.blit(title, (BOARD_SIZE + 35, 40))
+
+    black_text = small_font.render(f"Black: {black_moves}", True, TEXT)
+    screen.blit(black_text, (BOARD_SIZE + 20, 100))
+
+    white_text = small_font.render(f"White: {white_moves}", True, TEXT)
+    screen.blit(white_text, (BOARD_SIZE + 20, 140))
+
+    turn_label = "Black" if current_player == 'B' else "White"
+    turn_text = small_font.render(f"Turn: {turn_label}", True, TEXT)
+    screen.blit(turn_text, (BOARD_SIZE + 20, 200))
+
+    mouse_pos = pygame.mouse.get_pos()
+    button_color = BUTTON_HOVER if RESET_BUTTON.collidepoint(mouse_pos) else BUTTON
+    pygame.draw.rect(screen, button_color, RESET_BUTTON, border_radius=8)
+    pygame.draw.rect(screen, LINE, RESET_BUTTON, 2, border_radius=8)
+
+    reset_text = small_font.render("Reset", True, WHITE)
+    reset_rect = reset_text.get_rect(center=RESET_BUTTON.center)
+    screen.blit(reset_text, reset_rect)
 
 def get_position(pos):
     x, y = pos
@@ -103,7 +149,12 @@ while running:
             running = False
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            pos = get_position(pygame.mouse.get_pos())
+            mouse_pos = pygame.mouse.get_pos()
+            if RESET_BUTTON.collidepoint(mouse_pos):
+                reset_game()
+                continue
+
+            pos = get_position(mouse_pos)
             if pos:
                 r, c = pos
                 if board[r][c] == '.':
@@ -115,6 +166,11 @@ while running:
                     if count_liberties(r, c) == 0:
                         board[r][c] = '.'
                         continue
+
+                    if current_player == 'B':
+                        black_moves += 1
+                    else:
+                        white_moves += 1
 
                     current_player = opponent
 

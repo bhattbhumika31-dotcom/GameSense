@@ -1,5 +1,5 @@
 import copy, random, sys, pygame
-from sudoku_helper import SudokuHelper
+import sudoku_helper
 
 # Constants
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
@@ -13,6 +13,11 @@ FIXED_TEXT_COLOR, USER_TEXT_COLOR = (30, 30, 30), (30, 86, 160)
 SELECT_COLOR, WRONG_COLOR, SUCCESS_COLOR = (255, 220, 120), (205, 70, 70), (40, 140, 80)
 BUTTON_COLOR, BUTTON_TEXT_COLOR = (55, 120, 190), (255, 255, 255)
 RED_BG, GREEN_BG = (255, 200, 200), (200, 255, 200)
+
+def set_board_size(size):
+    global BOARD_SIZE, SUBGRID_SIZE
+    BOARD_SIZE = size
+    SUBGRID_SIZE = 3 if BOARD_SIZE == 9 else 2
 
 def make_empty_board():
     return [[0] * BOARD_SIZE for _ in range(BOARD_SIZE)]
@@ -101,6 +106,7 @@ class SudokuGame:
         self.auto_fill_moves = []
         self.auto_fill_index = 0
         self.last_fill_time = 0
+        self.board_mode = 9
         self.new_game()
 
     def new_game(self):
@@ -118,20 +124,18 @@ class SudokuGame:
         return self.puzzle[r][c] != 0
 
     def start_auto_fill(self):
-        helper = SudokuHelper(self.puzzle, self.solution, self.board, BOARD_SIZE)
-        self.wrong_cells = helper.find_wrong_cells()
+        self.wrong_cells = sudoku_helper.find_wrong_cells(self.puzzle, self.solution, self.board, BOARD_SIZE)
         if self.wrong_cells:
             return
-        row, col, num = helper.find_next_move()
+        row, col, num = sudoku_helper.find_next_move(self.board, self.solution, BOARD_SIZE)
         self.helper_cell = (row, col, num) if row is not None else None
 
     def solve_board(self):
-        helper = SudokuHelper(self.puzzle, self.solution, self.board, BOARD_SIZE)
-        self.wrong_cells = helper.find_wrong_cells()
+        self.wrong_cells = sudoku_helper.find_wrong_cells(self.puzzle, self.solution, self.board, BOARD_SIZE)
         if self.wrong_cells:
             return
         self.helper_cell = None
-        self.auto_fill_moves = helper.get_all_remaining_moves()
+        self.auto_fill_moves = sudoku_helper.get_all_remaining_moves(self.board, self.solution, BOARD_SIZE)
         self.auto_fill_index = 0
         self.last_fill_time = pygame.time.get_ticks()
         # Fill first move immediately for instant feedback.
@@ -171,6 +175,8 @@ class SudokuGame:
             "btn_help": pygame.Rect(btn_x, btn_y_start + v_gap, btn_w, btn_h),
             "btn_solve": pygame.Rect(btn_x, btn_y_start + 2*v_gap, btn_w, btn_h),
             "btn_fs": pygame.Rect(btn_x, btn_y_start + 3*v_gap, btn_w, btn_h),
+            "btn_4x4": pygame.Rect(btn_x, btn_y_start + 4*v_gap, btn_w, btn_h),
+            "btn_9x9": pygame.Rect(btn_x, btn_y_start + 5*v_gap, btn_w, btn_h),
             "msg_y": min(h - 40, board_t + board_px + 20),
         }
 
@@ -180,11 +186,10 @@ class SudokuGame:
         self.screen.blit(surf, surf.get_rect(center=rect.center))
 
     def solve_board(self):
-        helper = SudokuHelper(self.puzzle, self.solution, self.board, BOARD_SIZE)
-        self.wrong_cells = helper.find_wrong_cells()
+        self.wrong_cells = sudoku_helper.find_wrong_cells(self.puzzle, self.solution, self.board, BOARD_SIZE)
         if self.wrong_cells:
             return
-        self.auto_fill_moves = helper.get_all_remaining_moves()
+        self.auto_fill_moves = sudoku_helper.get_all_remaining_moves(self.board, self.solution, BOARD_SIZE)
         self.auto_fill_index = 0
         self.last_fill_time = pygame.time.get_ticks()
 
@@ -202,6 +207,14 @@ class SudokuGame:
             sz = (info.current_w, info.current_h) if self.is_fullscreen else (WINDOW_WIDTH, WINDOW_HEIGHT)
             flags = pygame.FULLSCREEN if self.is_fullscreen else 0
             self.screen = pygame.display.set_mode(sz, flags)
+        elif self.layout["btn_4x4"].collidepoint(pos):
+            self.board_mode = 4
+            set_board_size(4)
+            self.new_game()
+        elif self.layout["btn_9x9"].collidepoint(pos):
+            self.board_mode = 9
+            set_board_size(9)
+            self.new_game()
         else:
             l, t, sz, px = self.layout["left"], self.layout["top"], self.layout["sz"], self.layout["px"]
             if l <= pos[0] < l + px and t <= pos[1] < t + px:
@@ -252,9 +265,11 @@ class SudokuGame:
         self.draw_button(self.layout["btn_solve"], "Solve Board")
         label = "Windowed" if self.is_fullscreen else "Fullscreen"
         self.draw_button(self.layout["btn_fs"], label)
+        self.draw_button(self.layout["btn_4x4"], "4x4 Board")
+        self.draw_button(self.layout["btn_9x9"], "9x9 Board")
         
         # Title
-        title = self.fonts['title'].render("Sudoku", True, THICK_GRID_COLOR)
+        title = self.fonts['title'].render(f"Sudoku {BOARD_SIZE}x{BOARD_SIZE}", True, THICK_GRID_COLOR)
         self.screen.blit(title, title.get_rect(center=(self.layout["w"] // 2, 38)))
         
         # Board
