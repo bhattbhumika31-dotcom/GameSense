@@ -22,6 +22,7 @@ MENU_ITEMS = [
     ("Sudoku", "sudoku.py"),
     ("Maze Game", "maze_game.py"),
     ("Go Game", "go.py"),
+    ("Chess", "chess_game.py"),
 ]
 
 
