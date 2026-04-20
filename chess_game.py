@@ -1,5 +1,6 @@
 import sys
 import pygame
+from connectivity import GameSession
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 SQ       = 80          # pixels per square
@@ -528,6 +529,13 @@ class Renderer:
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 
+def sync_session(game, session):
+    session.update_moves(len(game.history))
+    if game.status == 'checkmate':
+        session.record_win(len(game.history))
+    elif game.status == 'stalemate':
+        session.record_loss(len(game.history))
+
 def main():
     pygame.init()
     screen=pygame.display.set_mode((WIN_W,WIN_H))
@@ -535,16 +543,21 @@ def main():
     clock=pygame.time.Clock()
     renderer=Renderer(screen)
     game=Game()
+    session=GameSession("Chess")
+
 
     while True:
         clock.tick(60)
         for event in pygame.event.get():
             if event.type==pygame.QUIT:
+                sync_session(game, session)
                 pygame.quit(); sys.exit()
 
             elif event.type==pygame.KEYDOWN:
                 if event.key==pygame.K_r:
+                    session.record_loss(len(game.history))
                     game.reset()
+                    session=GameSession("Chess")
                 elif event.key==pygame.K_u:
                     game.undo()
 
@@ -562,6 +575,7 @@ def main():
                     sq=mx//SQ, my//SQ   # col, row
                     game.click(sq[1], sq[0])
 
+        sync_session(game, session)
         renderer.draw(game)
         pygame.display.flip()
 

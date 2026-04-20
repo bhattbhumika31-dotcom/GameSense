@@ -1,5 +1,6 @@
 import copy, random, sys, pygame
 import sudoku_helper
+from connectivity import GameSession
 
 # Constants
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
@@ -107,9 +108,13 @@ class SudokuGame:
         self.auto_fill_index = 0
         self.last_fill_time = 0
         self.board_mode = 9
+        self.game_won = False
+        self.session = None
         self.new_game()
 
     def new_game(self):
+        if self.session is not None:
+            self.session.record_loss(self.move_count)
         self.puzzle, self.solution = make_puzzle()
         self.board = copy.deepcopy(self.puzzle)
         self.selected = None
@@ -119,6 +124,8 @@ class SudokuGame:
         self.auto_fill_moves = []
         self.auto_fill_index = 0
         self.last_fill_time = 0
+        self.game_won = False
+        self.session = GameSession("Sudoku")
 
     def is_fixed(self, r, c):
         return self.puzzle[r][c] != 0
@@ -153,8 +160,15 @@ class SudokuGame:
                 r, c, num = self.auto_fill_moves[self.auto_fill_index]
                 self.board[r][c] = num
                 self.move_count += 1
+                self.session.update_moves(self.move_count)
                 self.auto_fill_index += 1
                 self.last_fill_time = current_time
+                self.check_win()
+
+    def check_win(self):
+        if not self.game_won and self.board == self.solution:
+            self.game_won = True
+            self.session.record_win(self.move_count)
 
     def update_layout(self):
         w, h = self.screen.get_size()
@@ -233,6 +247,8 @@ class SudokuGame:
         self.board[r][c] = digit if digit != 0 else 0
         if digit != 0:
             self.move_count += 1
+            self.session.update_moves(self.move_count)
+        self.check_win()
 
     def handle_key(self, event):
         if event.key == pygame.K_n:

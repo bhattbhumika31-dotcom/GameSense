@@ -1,5 +1,6 @@
 import pygame
 import sys
+from connectivity import GameSession
 
 SIZE = 9
 CELL_SIZE = 60
@@ -30,13 +31,16 @@ board = [['.' for _ in range(SIZE)] for _ in range(SIZE)]
 current_player = 'B'
 black_moves = 0
 white_moves = 0
+session = GameSession("Go Game")
 
 def reset_game():
-    global board, current_player, black_moves, white_moves
+    global board, current_player, black_moves, white_moves, session
+    session.record_loss(black_moves + white_moves)
     board = [['.' for _ in range(SIZE)] for _ in range(SIZE)]
     current_player = 'B'
     black_moves = 0
     white_moves = 0
+    session = GameSession("Go Game")
 
 def neighbors(r, c):
     dirs = [(1,0), (-1,0), (0,1), (0,-1)]
@@ -171,6 +175,7 @@ while running:
                         black_moves += 1
                     else:
                         white_moves += 1
+                    session.update_moves(black_moves + white_moves)
 
                     current_player = opponent
 

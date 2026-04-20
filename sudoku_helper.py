@@ -1,8 +1,3 @@
-"""
-Sudoku Helper Module
-Provides functionality to detect wrong moves and find the next correct move.
-"""
-
 import copy
 
 

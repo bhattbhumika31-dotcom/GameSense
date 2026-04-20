@@ -3,6 +3,7 @@ import random
 from collections import deque
 
 import pygame
+from connectivity import GameSession
 
 WALL = "#"
 PATH = " "
@@ -146,6 +147,7 @@ def create_state():
         "font": pygame.font.Font(None, 24),
         "font_small": pygame.font.Font(None, 18),
         "buttons": make_buttons(),
+        "session": None,
     }
 
     apply_difficulty(state, state["difficulty"])
@@ -158,6 +160,8 @@ def get_button_rect(state, key):
 
 
 def reset_game(state):
+    if state["session"] is not None:
+        state["session"].record_loss(state["move_count"])
     state["grid"] = make_grid(state["size"], state["size"])
     carve_maze(state["grid"], 1, 1)
     state["player"] = (1, 1)
@@ -166,6 +170,7 @@ def reset_game(state):
     state["move_count"] = 0
     state["show_hint"] = False
     state["hint_path"] = []
+    state["session"] = GameSession("Maze Game")
 
 
 def apply_difficulty(state, difficulty):
@@ -300,10 +305,12 @@ def move_player(state, dr, dc):
 
     state["player"] = (nr, nc)
     state["move_count"] += 1
+    state["session"].update_moves(state["move_count"])
     state["show_hint"] = False
 
     if state["player"] == state["goal"]:
         state["won"] = True
+        state["session"].record_win(state["move_count"])
 
 
 def show_hint(state):
