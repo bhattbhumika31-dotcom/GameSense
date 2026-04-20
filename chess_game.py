@@ -28,11 +28,28 @@ WHITE, BLACK = 1, -1
 
 PIECE_VAL = {PAWN:1, KNIGHT:3, BISHOP:3, ROOK:5, QUEEN:9, KING:0}
 
-GLYPHS = {
+PIECE_MARKS = {
+    PAWN: 'P',
+    KNIGHT: 'N',
+    BISHOP: 'B',
+    ROOK: 'R',
+    QUEEN: 'Q',
+    KING: 'K',
+}
+
+UNICODE_GLYPHS = {
     (WHITE,KING):'♔',(WHITE,QUEEN):'♕',(WHITE,ROOK):'♖',
     (WHITE,BISHOP):'♗',(WHITE,KNIGHT):'♘',(WHITE,PAWN):'♙',
     (BLACK,KING):'♚',(BLACK,QUEEN):'♛',(BLACK,ROOK):'♜',
     (BLACK,BISHOP):'♝',(BLACK,KNIGHT):'♞',(BLACK,PAWN):'♟',
+}
+
+# Keep GLYPHS ASCII-safe for any future text-based rendering paths.
+GLYPHS = {
+    (WHITE, KING): 'K', (WHITE, QUEEN): 'Q', (WHITE, ROOK): 'R',
+    (WHITE, BISHOP): 'B', (WHITE, KNIGHT): 'N', (WHITE, PAWN): 'P',
+    (BLACK, KING): 'K', (BLACK, QUEEN): 'Q', (BLACK, ROOK): 'R',
+    (BLACK, BISHOP): 'B', (BLACK, KNIGHT): 'N', (BLACK, PAWN): 'P',
 }
 
 def get_chess_suggestion(game):
@@ -341,13 +358,14 @@ class Renderer:
     def __init__(self, screen):
         self.screen=screen
         pygame.font.init()
-        self.pfont=self._best_piece_font()
+        self.pfont=pygame.font.SysFont(None, int(SQ*0.42), bold=True)
         self.sfont=pygame.font.SysFont('Arial',14)
         self.cfont=pygame.font.SysFont('Arial',13,bold=True)
         self.stfont=pygame.font.SysFont('Arial',19,bold=True)
         self.bfont=pygame.font.SysFont('Arial',15,bold=True)
 
     def _best_piece_font(self):
+        return pygame.font.SysFont(None, int(SQ*0.42), bold=True)
         for name in ['segoeuisymbol','notosans','dejavusans','freesans',None]:
             try:
                 f=pygame.font.SysFont(name, int(SQ*0.82))
@@ -385,6 +403,38 @@ class Renderer:
         lines.append(current)
         return lines
 
+    def _draw_piece(self, surf, cell, x, y, size=SQ):
+        color, piece = cell
+        label = PIECE_MARKS.get(piece, '?')
+        pad = max(8, size // 8)
+        piece_surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        token = pygame.Rect(pad, pad, size - 2 * pad, size - 2 * pad)
+        shadow = token.move(2, 3)
+
+        if color == WHITE:
+            fill = (244, 239, 228)
+            rim = (58, 48, 38)
+            text = (58, 48, 38)
+            gloss = (255, 255, 255)
+        else:
+            fill = (46, 43, 40)
+            rim = (236, 229, 218)
+            text = (242, 236, 228)
+            gloss = (84, 80, 76)
+
+        pygame.draw.ellipse(piece_surf, (0, 0, 0, 55), shadow)
+        pygame.draw.ellipse(piece_surf, fill, token)
+        pygame.draw.ellipse(piece_surf, rim, token, 3)
+
+        gloss_rect = pygame.Rect(token.x + 6, token.y + 5, token.w - 12, max(10, token.h // 3))
+        pygame.draw.ellipse(piece_surf, gloss, gloss_rect, 1)
+
+        glyph = self.pfont.render(label, True, text)
+        gx = (size - glyph.get_width()) // 2
+        gy = (size - glyph.get_height()) // 2 - 1
+        piece_surf.blit(glyph, (gx, gy))
+        surf.blit(piece_surf, (x, y))
+
     def draw(self, g):
         self.screen.fill((18,18,18))
         bs=pygame.Surface((BOARD_PX,BOARD_PX))
@@ -421,15 +471,8 @@ class Renderer:
             for c in range(8):
                 cell=g.board[r][c]
                 if cell is None: continue
-                col,_=cell
-                sym=GLYPHS.get(cell,'?')
-                fg=(255,255,255) if col==WHITE else (20,20,20)
-                ol=(30,30,30)    if col==WHITE else (210,210,210)
                 x,y=c*SQ,r*SQ
-                for dx,dy in[(-2,0),(2,0),(0,-2),(0,2)]:
-                    sh=self.pfont.render(sym,True,ol)
-                    bs.blit(sh,(x+dx+1,y+dy+1))
-                bs.blit(self.pfont.render(sym,True,fg),(x+1,y+1))
+                self._draw_piece(bs, cell, x, y)
         # coordinates
         for i in range(8):
             f1=DARK  if i%2==0 else LIGHT
@@ -512,9 +555,7 @@ class Renderer:
             x=ox+i*SQ
             pygame.draw.rect(self.screen,(245,245,245),(x,oy,SQ,SQ))
             pygame.draw.rect(self.screen,(80,80,80),(x,oy,SQ,SQ),2)
-            sym=GLYPHS.get((color,p),'?')
-            gl=self.pfont.render(sym,True,(20,20,20))
-            self.screen.blit(gl,(x+2,oy+2))
+            self._draw_piece(self.screen, (color, p), x, oy)
         lbl=self.sfont.render('Choose promotion piece',True,(230,230,230))
         self.screen.blit(lbl,((BOARD_PX-lbl.get_width())//2, oy-26))
 
