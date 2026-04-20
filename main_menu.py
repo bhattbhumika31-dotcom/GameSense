@@ -23,16 +23,18 @@ MENU_ITEMS = [
     ("Maze Game", "maze_game.py"),
     ("Go Game", "go.py"),
     ("Chess", "chess_game.py"),
+    ("Host Multiplayer", "server.py"),
+    ("Join Multiplayer", "client.py"),
 ]
 
 
 def build_buttons():
     buttons = []
     button_width = 280
-    button_height = 58
-    gap = 18
+    button_height = 50
+    gap = 12
     start_x = (WINDOW_WIDTH - button_width) // 2
-    start_y = 180
+    start_y = 160
 
     for index, (label, filename) in enumerate(MENU_ITEMS):
         rect = pygame.Rect(
@@ -47,21 +49,24 @@ def build_buttons():
 
 
 def launch_game(filename):
-    subprocess.Popen([sys.executable, str(BASE_DIR / filename)], cwd=BASE_DIR)
+    kwargs = {"cwd": BASE_DIR}
+    if filename in {"server.py", "client.py"} and sys.platform == "win32":
+        kwargs["creationflags"] = subprocess.CREATE_NEW_CONSOLE
+    subprocess.Popen([sys.executable, str(BASE_DIR / filename)], **kwargs)
 
 
 def draw_menu(screen, fonts, buttons):
     screen.fill(BG_COLOR)
 
-    panel = pygame.Rect(150, 70, 600, 460)
+    panel = pygame.Rect(150, 35, 600, 530)
     pygame.draw.rect(screen, PANEL_COLOR, panel, border_radius=18)
     pygame.draw.rect(screen, BORDER_COLOR, panel, 2, border_radius=18)
 
     title = fonts["title"].render("Game Sense", True, TITLE_COLOR)
-    subtitle = fonts["body"].render("Choose a game to launch", True, SUBTITLE_COLOR)
+    subtitle = fonts["body"].render("Choose a game or multiplayer mode", True, SUBTITLE_COLOR)
 
-    screen.blit(title, title.get_rect(center=(WINDOW_WIDTH // 2, 120)))
-    screen.blit(subtitle, subtitle.get_rect(center=(WINDOW_WIDTH // 2, 155)))
+    screen.blit(title, title.get_rect(center=(WINDOW_WIDTH // 2, 90)))
+    screen.blit(subtitle, subtitle.get_rect(center=(WINDOW_WIDTH // 2, 125)))
 
     mouse_pos = pygame.mouse.get_pos()
     for button in buttons:
@@ -71,7 +76,7 @@ def draw_menu(screen, fonts, buttons):
         screen.blit(text, text.get_rect(center=button["rect"].center))
 
     footer = fonts["small"].render("Press Esc to close the menu", True, SUBTITLE_COLOR)
-    screen.blit(footer, footer.get_rect(center=(WINDOW_WIDTH // 2, 500)))
+    screen.blit(footer, footer.get_rect(center=(WINDOW_WIDTH // 2, 545)))
 
     pygame.display.flip()
 
