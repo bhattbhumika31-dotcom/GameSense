@@ -47,6 +47,17 @@ def save_closed_game(game, moves=None, play_time=None):
     save_game_result(game, "lost", moves, play_time)
 
 
+def fetch_history():
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT play_time, game, outcome, moves FROM history")
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        connection.close()
+
+
 class GameSession:
     def __init__(self, game_name, moves=0):
         self.game_name = game_name

@@ -358,20 +358,26 @@ class Renderer:
     def __init__(self, screen):
         self.screen=screen
         pygame.font.init()
-        self.pfont=pygame.font.SysFont(None, int(SQ*0.42), bold=True)
+        self.pfont=self._best_piece_font()
         self.sfont=pygame.font.SysFont('Arial',14)
         self.cfont=pygame.font.SysFont('Arial',13,bold=True)
         self.stfont=pygame.font.SysFont('Arial',19,bold=True)
         self.bfont=pygame.font.SysFont('Arial',15,bold=True)
 
     def _best_piece_font(self):
-        return pygame.font.SysFont(None, int(SQ*0.42), bold=True)
-        for name in ['segoeuisymbol','notosans','dejavusans','freesans',None]:
-            try:
-                f=pygame.font.SysFont(name, int(SQ*0.82))
-                if f.render('♔',True,(0,0,0)).get_width()>10: return f
-            except: pass
-        return pygame.font.SysFont(None, int(SQ*0.78))
+        font_size = int(SQ * 0.82)
+        font_names = [
+            'Segoe UI Symbol',
+            'Segoe UI Emoji',
+            'Noto Sans Symbols 2',
+            'Noto Sans Symbols',
+            'DejaVu Sans',
+            'Arial Unicode MS',
+        ]
+        for name in font_names:
+            if pygame.font.match_font(name):
+                return pygame.font.SysFont(name, font_size)
+        return pygame.font.SysFont(None, int(SQ * 0.55), bold=True)
 
     def overlay(self, surf, color, r, c, shape='fill'):
         x,y=c*SQ,r*SQ
@@ -405,33 +411,17 @@ class Renderer:
 
     def _draw_piece(self, surf, cell, x, y, size=SQ):
         color, piece = cell
-        label = PIECE_MARKS.get(piece, '?')
-        pad = max(8, size // 8)
+        label = UNICODE_GLYPHS.get(cell, PIECE_MARKS.get(piece, '?'))
+        fill = (248, 244, 235) if color == WHITE else (32, 30, 28)
+        outline = (44, 38, 32) if color == WHITE else (238, 231, 220)
         piece_surf = pygame.Surface((size, size), pygame.SRCALPHA)
-        token = pygame.Rect(pad, pad, size - 2 * pad, size - 2 * pad)
-        shadow = token.move(2, 3)
-
-        if color == WHITE:
-            fill = (244, 239, 228)
-            rim = (58, 48, 38)
-            text = (58, 48, 38)
-            gloss = (255, 255, 255)
-        else:
-            fill = (46, 43, 40)
-            rim = (236, 229, 218)
-            text = (242, 236, 228)
-            gloss = (84, 80, 76)
-
-        pygame.draw.ellipse(piece_surf, (0, 0, 0, 55), shadow)
-        pygame.draw.ellipse(piece_surf, fill, token)
-        pygame.draw.ellipse(piece_surf, rim, token, 3)
-
-        gloss_rect = pygame.Rect(token.x + 6, token.y + 5, token.w - 12, max(10, token.h // 3))
-        pygame.draw.ellipse(piece_surf, gloss, gloss_rect, 1)
-
-        glyph = self.pfont.render(label, True, text)
+        glyph = self.pfont.render(label, True, fill)
         gx = (size - glyph.get_width()) // 2
-        gy = (size - glyph.get_height()) // 2 - 1
+        gy = (size - glyph.get_height()) // 2 - 4
+
+        for ox, oy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            edge = self.pfont.render(label, True, outline)
+            piece_surf.blit(edge, (gx + ox, gy + oy))
         piece_surf.blit(glyph, (gx, gy))
         surf.blit(piece_surf, (x, y))
 
